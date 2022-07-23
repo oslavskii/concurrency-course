@@ -10,7 +10,7 @@ import java.util.concurrent.ForkJoinPool;
 
 public class ReportServiceCF {
 
-    private ExecutorService executor = ForkJoinPool.commonPool();
+    public static ExecutorService executor = ForkJoinPool.commonPool();
 
     private LoadGenerator loadGenerator = new LoadGenerator();
 
