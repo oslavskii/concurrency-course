@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
@@ -11,15 +12,23 @@ import org.springframework.stereotype.Component;
 public class AsyncClassTest {
 
     @Autowired
-    public ApplicationContext context;
+    public AsyncClassHelper asyncClassHelper;
 
     @EventListener(ApplicationReadyEvent.class)
     public void actionAfterStartup() {
-        runAsyncTask();
+        asyncClassHelper.runAsyncTask();
     }
 
-    public void runAsyncTask() {
-        ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor) context.getBean("applicationTaskExecutor");
-        System.out.println("Perfect place for breakpoint");
+    @Component
+    static class AsyncClassHelper {
+
+        @Autowired
+        public ApplicationContext context;
+
+        @Async
+        public void runAsyncTask() {
+            ThreadPoolTaskExecutor executor = (ThreadPoolTaskExecutor) context.getBean("applicationTaskExecutor");
+            System.out.println("Perfect place for breakpoint");
+        }
     }
 }
