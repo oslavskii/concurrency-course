@@ -3,8 +3,9 @@ package course.concurrency.m2_async.cf.min_price;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
+import static java.lang.Double.NaN;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toList;
 
 public class PriceAggregator {
@@ -22,22 +23,26 @@ public class PriceAggregator {
     }
 
     public double getMinPrice(long itemId) {
-        var slaInMillis = 3000 - shopIds.size();
-        var waitTill = System.currentTimeMillis() + slaInMillis;
+        var slaInMillis = 2900;
         var pricesCF = shopIds.stream()
-                .map(shopId -> CompletableFuture.supplyAsync(() -> priceRetriever.getPrice(itemId, shopId)))
-                .collect(toList());
-        return pricesCF.parallelStream()
-                .map(cf -> {
+                .map(shopId -> CompletableFuture.supplyAsync(() -> {
                     try {
-                        return cf.get(waitTill - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                        return priceRetriever.getPrice(itemId, shopId);
                     } catch (Exception ex) {
-                        return Double.NaN;
+                        return NaN;
                     }
-                })
-                .filter(it -> !it.isNaN())
-                .mapToDouble(it -> it)
-                .min()
-                .orElse(Double.NaN);
+                }))
+                .collect(toList());
+        return CompletableFuture.allOf(pricesCF.toArray(CompletableFuture[]::new))
+                .completeOnTimeout(null, slaInMillis, MILLISECONDS)
+                .thenApply(v -> pricesCF.stream()
+                        .filter(CompletableFuture::isDone)
+                        .map(CompletableFuture::join)
+                        .filter(it -> !it.isNaN())
+                        .mapToDouble(it -> it)
+                        .min()
+                        .orElse(NaN)
+
+                ).join();
     }
 }
