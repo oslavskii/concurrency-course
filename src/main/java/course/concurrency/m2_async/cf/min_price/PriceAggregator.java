@@ -10,6 +10,8 @@ import static java.util.stream.Collectors.toList;
 
 public class PriceAggregator {
 
+    private static final long SLA_IN_MILLIS = 2900;
+
     private PriceRetriever priceRetriever = new PriceRetriever();
 
     public void setPriceRetriever(PriceRetriever priceRetriever) {
@@ -23,18 +25,14 @@ public class PriceAggregator {
     }
 
     public double getMinPrice(long itemId) {
-        var slaInMillis = 2900;
         var pricesCF = shopIds.stream()
-                .map(shopId -> CompletableFuture.supplyAsync(() -> {
-                    try {
-                        return priceRetriever.getPrice(itemId, shopId);
-                    } catch (Exception ex) {
-                        return NaN;
-                    }
-                }))
+                .map(shopId -> CompletableFuture
+                        .supplyAsync(() -> priceRetriever.getPrice(itemId, shopId))
+                        .exceptionally((t) -> NaN)
+                )
                 .collect(toList());
         return CompletableFuture.allOf(pricesCF.toArray(CompletableFuture[]::new))
-                .completeOnTimeout(null, slaInMillis, MILLISECONDS)
+                .completeOnTimeout(null, SLA_IN_MILLIS, MILLISECONDS)
                 .thenApply(v -> pricesCF.stream()
                         .filter(CompletableFuture::isDone)
                         .map(CompletableFuture::join)
@@ -42,7 +40,6 @@ public class PriceAggregator {
                         .mapToDouble(it -> it)
                         .min()
                         .orElse(NaN)
-
                 ).join();
     }
 }
