@@ -1,5 +1,7 @@
 package course.concurrency.exams.auction;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class AuctionOptimistic implements Auction {
 
     private Notifier notifier;
@@ -8,18 +10,21 @@ public class AuctionOptimistic implements Auction {
         this.notifier = notifier;
     }
 
-    private Bid latestBid;
+    private final AtomicReference<Bid> latestBid = new AtomicReference(null);
 
     public boolean propose(Bid bid) {
-        if (bid.price > latestBid.price) {
-            notifier.sendOutdatedMessage(latestBid);
-            latestBid = bid;
-            return true;
-        }
-        return false;
+        Bid latest;
+        do {
+            latest = latestBid.get();
+            if (latest != null && bid.price <= latest.price)
+                return false;
+        } while (!latestBid.compareAndSet(latest, bid));
+        if (latest != null)
+            notifier.sendOutdatedMessage(latest);
+        return true;
     }
 
     public Bid getLatestBid() {
-        return latestBid;
+        return latestBid.get();
     }
 }
