@@ -60,4 +60,10 @@ public class Others {
             return ThreadLocalRandom.current().nextBoolean();
         }
     }
+
+    public static class MountTableManagerBuilder {
+        public MountTableManager build(String address) {
+            return new MountTableManager(address);
+        }
+    }
 }

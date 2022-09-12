@@ -1,23 +1,20 @@
 package course.concurrency.exams.refactoring;
 
+import java.util.concurrent.Callable;
+
 import static course.concurrency.exams.refactoring.Others.*;
 
-import java.util.concurrent.CountDownLatch;
+public class MountTableRefresherTask implements Callable<Boolean> {
 
-public class MountTableRefresherThread extends Thread {
-
-    private boolean success;
+    private volatile boolean success;
     /** Admin server on which refreshed to be invoked. */
-    private String adminAddress;
-    private CountDownLatch countDownLatch;
-    private MountTableManager manager;
+    private final String adminAddress;
+    private final MountTableManager manager;
 
-    public MountTableRefresherThread(MountTableManager manager,
-                                     String adminAddress) {
+    public MountTableRefresherTask(MountTableManager manager,
+                                   String adminAddress) {
         this.manager = manager;
         this.adminAddress = adminAddress;
-        setName("MountTableRefresh_" + adminAddress);
-        setDaemon(true);
     }
 
     /**
@@ -33,12 +30,10 @@ public class MountTableRefresherThread extends Thread {
      * update cache on R2 and R3.
      */
     @Override
-    public void run() {
-        try {
-            success = manager.refresh();
-        } finally {
-            countDownLatch.countDown();
-        }
+    public Boolean call() {
+        success = manager.refresh();
+        System.out.println("called");
+        return success;
     }
 
     /**
@@ -46,10 +41,6 @@ public class MountTableRefresherThread extends Thread {
      */
     public boolean isSuccess() {
         return success;
-    }
-
-    public void setCountDownLatch(CountDownLatch countDownLatch) {
-        this.countDownLatch = countDownLatch;
     }
 
     @Override
