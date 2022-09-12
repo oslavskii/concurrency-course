@@ -1,5 +1,7 @@
 package course.concurrency.m3_shared.immutable;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static course.concurrency.m3_shared.immutable.Order.Status.NEW;
@@ -8,34 +10,28 @@ public class Order {
 
     public enum Status { NEW, IN_PROGRESS, DELIVERED }
 
-    private Long id;
-    private List<Item> items;
-    private PaymentInfo paymentInfo;
-    private boolean isPacked;
-    private Status status;
+    private final Long id;
+    private final List<Item> items;
+    private volatile PaymentInfo paymentInfo;
+    private volatile boolean isPacked;
+    private volatile Status status;
 
-    public Order(List<Item> items) {
-        this.items = items;
+    public Order(Long id, List<Item> items) {
+        this.id = id;
+        this.items = new ArrayList<>(items);
         this.status = NEW;
     }
 
-    public synchronized boolean checkStatus() {
-        if (items != null && !items.isEmpty() && paymentInfo != null && isPacked) {
-            return true;
-        }
-        return false;
+    public boolean readyForDelivery() {
+        return paymentInfo != null && isPacked;
     }
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
     public List<Item> getItems() {
-        return items;
+        return Collections.unmodifiableList(items);
     }
 
     public PaymentInfo getPaymentInfo() {
@@ -62,5 +58,9 @@ public class Order {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public boolean isDelivered() {
+        return status.equals(Order.Status.DELIVERED);
     }
 }
