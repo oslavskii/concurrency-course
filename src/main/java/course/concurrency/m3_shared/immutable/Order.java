@@ -12,14 +12,20 @@ public class Order {
 
     private final Long id;
     private final List<Item> items;
-    private volatile PaymentInfo paymentInfo;
-    private volatile boolean isPacked;
-    private volatile Status status;
+    private final PaymentInfo paymentInfo;
+    private final boolean isPacked;
+    private final Status status;
 
     public Order(Long id, List<Item> items) {
+        this(id, items, null, false, NEW);
+    }
+
+    private Order(Long id, List<Item> items, PaymentInfo paymentInfo, Boolean isPacked, Status status) {
         this.id = id;
         this.items = new ArrayList<>(items);
-        this.status = NEW;
+        this.paymentInfo = paymentInfo;
+        this.isPacked = isPacked;
+        this.status = status;
     }
 
     public boolean readyForDelivery() {
@@ -38,26 +44,42 @@ public class Order {
         return paymentInfo;
     }
 
-    public void setPaymentInfo(PaymentInfo paymentInfo) {
-        this.paymentInfo = paymentInfo;
-        this.status = Status.IN_PROGRESS;
+    public Order withPaymentInfo(PaymentInfo paymentInfo) {
+        return new Order(
+                this.id,
+                this.items,
+                paymentInfo,
+                this.isPacked,
+                Order.Status.IN_PROGRESS
+        );
     }
 
     public boolean isPacked() {
         return isPacked;
     }
 
-    public void setPacked(boolean packed) {
-        isPacked = packed;
-        this.status = Status.IN_PROGRESS;
+    public Order withPacked(Boolean isPacked) {
+        return new Order(
+                this.id,
+                this.items,
+                this.paymentInfo,
+                isPacked,
+                Order.Status.IN_PROGRESS
+        );
     }
 
     public Status getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
-        this.status = status;
+    public Order withStatus(Status status) {
+        return new Order(
+                this.id,
+                this.items,
+                this.paymentInfo,
+                this.isPacked,
+                status
+        );
     }
 
     public boolean isDelivered() {
