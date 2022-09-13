@@ -23,28 +23,23 @@ public class OrderService {
     }
 
     public void updatePaymentInfo(long orderId, PaymentInfo paymentInfo) {
-        var order = currentOrders.get(orderId);
-        currentOrders.computeIfPresent(orderId, (key, oldValue) -> oldValue.withPaymentInfo(paymentInfo));
-        if (order.readyForDelivery()) deliver(orderId);
+        Order updated = currentOrders.computeIfPresent(orderId,
+                (key, oldValue) -> oldValue.withPaymentInfo(paymentInfo));
+        if (updated != null && updated.readyForDelivery()) deliver(updated);
     }
 
     public void setPacked(long orderId) {
-        var order = currentOrders.get(orderId);
-        currentOrders.computeIfPresent(orderId, (key, oldValue) -> oldValue.withPacked(true));
-        if (order.readyForDelivery()) deliver(orderId);
+        Order updated = currentOrders.computeIfPresent(orderId,
+                (key, oldValue) -> oldValue.withPacked(true));
+        if (updated != null && updated.readyForDelivery()) deliver(updated);
     }
 
-    private synchronized void deliver(long orderId) {
-        currentOrders.computeIfPresent(orderId, (key, oldValue) -> {
-            if (oldValue.isDelivered()) return oldValue;
-            else {
-                /* ... */
-                return oldValue.withStatus(Order.Status.DELIVERED);
-            }
-        });
+    private void deliver(Order order) {
+        /* ... */
+        currentOrders.put(order.getId(), order.withStatus(Order.Status.DELIVERED));
     }
 
-    public synchronized boolean isDelivered(long orderId) {
+    public boolean isDelivered(long orderId) {
         return currentOrders.get(orderId).isDelivered();
     }
 }
